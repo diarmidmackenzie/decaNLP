@@ -1,0 +1,10 @@
+.data/
+.embeddings/
+results/
+diarmid_learning/
+mqan*/
+*.pyc
+**/*.pyc
+*.tgz
+*.tgz.*
+*.tar.gz
