@@ -12,8 +12,8 @@ While the research direction associated with this repository focused on multitas
 ## Leaderboard
 
 | Model | decaNLP | [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/) | [IWSLT](https://wit3.fbk.eu/mt.php?release=2016-01) | [CNN/DM](https://cs.nyu.edu/~kcho/DMQA/) | [MNLI](https://www.nyu.edu/projects/bowman/multinli/) | [SST](https://nlp.stanford.edu/sentiment/treebank.html) | [QA&#8209;SRL](https://dada.cs.washington.edu/qasrl/) | [QA&#8209;ZRE](http://nlp.cs.washington.edu/zeroshot/) | [WOZ](https://github.com/nmrksic/neural-belief-tracker/tree/master/data/woz) | [WikiSQL](https://github.com/salesforce/WikiSQL) | [MWSC](https://s3.amazonaws.com/research.metamind.io/decaNLP/data/schema.txt) |
-| --- | --- | --- | --- | --- | --- | --- | ---- | ---- | --- | --- |--- | 
-| [MQAN](https://arxiv.org/abs/1806.08730)(Sampling+[CoVe](http://papers.nips.cc/paper/7209-learned-in-translation-contextualized-word-vectors)) | 609.0 | 77.0 | 21.4 | 24.4 | 74.0 | 86.5 | 80.9 | 40.9 | 84.8 | 70.2 | 48.8 | 
+| --- | --- | --- | --- | --- | --- | --- | ---- | ---- | --- | --- |--- |
+| [MQAN](https://arxiv.org/abs/1806.08730)(Sampling+[CoVe](http://papers.nips.cc/paper/7209-learned-in-translation-contextualized-word-vectors)) | 609.0 | 77.0 | 21.4 | 24.4 | 74.0 | 86.5 | 80.9 | 40.9 | 84.8 | 70.2 | 48.8 |
 | [MQAN](https://arxiv.org/abs/1806.08730)(QA&#8209;first+[CoVe](http://papers.nips.cc/paper/7209-learned-in-translation-contextualized-word-vectors)) | 599.9 | 75.5 | 18.9 | 24.4 | 73.6 | 86.4 | 80.8 | 37.4 | 85.8 | 68.5 | 48.8 |
 | [MQAN](https://arxiv.org/abs/1806.08730)(QA&#8209;first) | 590.5 | 74.4 | 18.6 | 24.3 | 71.5 | 87.4 | 78.4 | 37.6 | 84.8 | 64.8 | 48.7 |
 | [S2S](https://arxiv.org/abs/1806.08730) | 513.6 | 47.5 | 14.2 | 25.7 | 60.9 | 85.9 | 68.7 | 28.5 | 84.0 | 45.8 | 52.4 |
@@ -28,12 +28,12 @@ If you want to use CPU, then remove the `nvidia-` and the `cuda9_` prefixes from
 
 For example, if you have CUDA and all the necessary drivers and GPUs, you you can run a command inside the CUDA Docker image using:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "COMMAND --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "COMMAND --device 0"
 ```
 
 If you want to run the same command without CUDA:
 ```bash
-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:torch041 bash -c "COMMAND --device -1"
+docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:torch041 bash -c "COMMAND --device -1"
 ```
 
 For those in the Docker know, you can look at the Dockerfiles used to build these two images in `dockerfiles/`.
@@ -46,22 +46,22 @@ The research associated with the original paper was done using Pytorch 0.3, but 
 
 For example, to train a Multitask Question Answering Network (MQAN) on the Stanford Question Answering Dataset (SQuAD) on GPU 0:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad --device 0"
 ```
 
 To multitask with the fully joint, round-robin training described in the paper, you can add multiple tasks:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad iwslt.en.de --train_iterations 1 --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad iwslt.en.de --train_iterations 1 --device 0"
 ```
 
 To train on the entire Natural Language Decathlon:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad iwslt.en.de cnn_dailymail multinli.in.out sst srl zre woz.en wikisql schema --train_iterations 1 --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --train_tasks squad iwslt.en.de cnn_dailymail multinli.in.out sst srl zre woz.en wikisql schema --train_iterations 1 --device 0"
 ```
 
 To pretrain on `n_jump_start=1` tasks for `jump_start=75000` iterations before switching to round-robin sampling of all tasks in the Natural Language Decathlon:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --n_jump_start 1 --jump_start 75000 --train_tasks squad iwslt.en.de cnn_dailymail multinli.in.out sst srl zre woz.en wikisql schema --train_iterations 1 --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/train.py --n_jump_start 1 --jump_start 75000 --train_tasks squad iwslt.en.de cnn_dailymail multinli.in.out sst srl zre woz.en wikisql schema --train_iterations 1 --device 0"
 ```
 This jump starting (or pretraining) on a subset of tasks can be done for any set of tasks, not only the entirety of decaNLP.
 
@@ -72,7 +72,7 @@ If you would like to make use of tensorboard, you can add the `--tensorboard` fl
 To read those files and run the Tensorboard server, run (typically in a `tmux` pane or equivalent so that the process is not killed when you shut your laptop) the following command:
 
 ```bash
-docker run -it --rm -p 0.0.0.0:6006:6006 -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "tensorboard --logdir /decaNLP/results"
+docker run -it --rm -p 0.0.0.0:6006:6006 -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "tensorboard --logdir /decaNLP/results"
 ```
 
 If you are running the server on a remote machine, you can run the following on your local machine to forward to http://localhost:6006/:
@@ -102,12 +102,12 @@ If you are having trouble with the specified port on either machine, run `lsof -
 You can evaluate a model for a specific task with `EVALUATION_TYPE` as `validation` or `test`:
 
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate EVALUATION_TYPE --path PATH_TO_CHECKPOINT_DIRECTORY --device 0 --tasks squad"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate EVALUATION_TYPE --path PATH_TO_CHECKPOINT_DIRECTORY --device 0 --tasks squad"
 ```
 
 or evaluate on the entire decathlon by removing any task specification:
 ```bash
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate EVALUATION_TYPE --path PATH_TO_CHECKPOINT_DIRECTORY --device 0"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate EVALUATION_TYPE --path PATH_TO_CHECKPOINT_DIRECTORY --device 0"
 ```
 
 For test performance, please use the original [SQuAD](https://rajpurkar.github.io/SQuAD-explorer/), [MultiNLI](https://www.nyu.edu/projects/bowman/multinli/), and [WikiSQL](https://github.com/salesforce/WikiSQL) evaluation systems. For WikiSQL, there is a detailed walk-through of how to get test numbers in the section of this document concerning [pretrained models](https://github.com/salesforce/decaNLP#pretrained-models).
@@ -119,7 +119,7 @@ This model is the best MQAN trained on decaNLP so far. It was trained first on S
 ```bash
 wget https://s3.amazonaws.com/research.metamind.io/decaNLP/pretrained/mqan_decanlp_better_sampling_cove_cpu.tgz
 tar -xvzf mqan_decanlp_better_sampling_cove_cpu.tgz
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate validation --path /decaNLP/mqan_decanlp_better_sampling_cove_cpu/ --checkpoint_name iteration_560000.pth --device 0 --silent"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate validation --path /decaNLP/mqan_decanlp_better_sampling_cove_cpu/ --checkpoint_name iteration_560000.pth --device 0 --silent"
 ```
 
 This model is the best MQAN trained on WikiSQL alone, which established [a new state-of-the-art performance by several points on that task](https://github.com/salesforce/WikiSQL): 73.2 / 75.4 / 81.4 (ordered test logical form accuracy, unordered test logical form accuracy, test execution accuracy).
@@ -127,13 +127,13 @@ This model is the best MQAN trained on WikiSQL alone, which established [a new s
 ```bash
 wget https://s3.amazonaws.com/research.metamind.io/decaNLP/pretrained/mqan_wikisql_cpu.tar.gz
 tar -xvzf mqan_wikisql_cpu.tar.gz
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/  bmccann/decanlp:cuda9_torch041 -c "python /decaNLP/predict.py --evaluate validation --path /decaNLP/mqan_wikisql_cpu --checkpoint_name iteration_57000.pth --device 0 --tasks wikisql"
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate test --path /decaNLP/mqan_wikisql_cpu --checkpoint_name iteration_57000.pth --device 0 --tasks wikisql"
-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/convert_to_logical_forms.py /decaNLP/.data/ /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql.ids.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql_logical_forms.jsonl valid"
-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/convert_to_logical_forms.py /decaNLP/.data/ /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql.ids.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql_logical_forms.jsonl test"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/  bmccann/decanlp:cuda9_torch041 -c "python /decaNLP/predict.py --evaluate validation --path /decaNLP/mqan_wikisql_cpu --checkpoint_name iteration_57000.pth --device 0 --tasks wikisql"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate test --path /decaNLP/mqan_wikisql_cpu --checkpoint_name iteration_57000.pth --device 0 --tasks wikisql"
+docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/convert_to_logical_forms.py /decaNLP/.data/ /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql.ids.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql_logical_forms.jsonl valid"
+docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/convert_to_logical_forms.py /decaNLP/.data/ /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql.ids.txt /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql_logical_forms.jsonl test"
 git clone https://github.com/salesforce/WikiSQL.git #git@github.com:salesforce/WikiSQL.git for ssh
-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/WikiSQL/evaluate.py /decaNLP/.data/wikisql/data/dev.jsonl /decaNLP/.data/wikisql/data/dev.db /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql_logical_forms.jsonl" # assumes that you have data stored in .data
-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/WikiSQL/evaluate.py /decaNLP/.data/wikisql/data/test.jsonl /decaNLP/.data/wikisql/data/test.db /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql_logical_forms.jsonl" # assumes that you have data stored in .data
+docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/WikiSQL/evaluate.py /decaNLP/.data/wikisql/data/dev.jsonl /decaNLP/.data/wikisql/data/dev.db /decaNLP/mqan_wikisql_cpu/iteration_57000/validation/wikisql_logical_forms.jsonl" # assumes that you have data stored in .data
+docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/WikiSQL/evaluate.py /decaNLP/.data/wikisql/data/test.jsonl /decaNLP/.data/wikisql/data/test.db /decaNLP/mqan_wikisql_cpu/iteration_57000/test/wikisql_logical_forms.jsonl" # assumes that you have data stored in .data
 ```
 
 You can similarly follow the instructions above for downloading, decompressing, and loading in pretrained models for other indivual tasks (single-task models):
@@ -152,6 +152,8 @@ wget https://s3.amazonaws.com/research.metamind.io/decaNLP/pretrained/schema_mqa
 
 ## Inference on a Custom Dataset
 
+**See also note 6 below in the final section of this document**
+
 Using a pretrained model or a model you have trained yourself, you can run on new, custom datasets easily by following the instructions below. In this example, we use the checkpoint for the best MQAN trained on the entirety of decaNLP (see the section on Pretrained Models to see how to get this checkpoint) to run on `my_custom_dataset`.
 
 ```bash
@@ -160,7 +162,7 @@ touch .data/my_custom_dataset/val.jsonl
 echo '{"context": "The answer is answer.", "question": "What is the answer?", "answer": "answer"}' >> .data/my_custom_dataset/val.jsonl 
 # TODO add your own examples line by line to val.jsonl in the form of a JSON dictionary, as demonstrated above.
 # Make sure to delete the first line if you don't want the demonstrated example.
-nvidia-docker run -it --rm -v `pwd`:/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate valid --path /decaNLP/mqan_decanlp_qa_first_cpu --checkpoint_name iteration_1140000.pth --tasks my_custom_dataset"
+nvidia-docker run -it --rm -v $(pwd):/decaNLP/ -u $(id -u):$(id -g) bmccann/decanlp:cuda9_torch041 bash -c "python /decaNLP/predict.py --evaluate valid --path /decaNLP/mqan_decanlp_qa_first_cpu --checkpoint_name iteration_1140000.pth --tasks my_custom_dataset"
 ```
 You should get output that ends with something like this:
 ```
@@ -193,3 +195,70 @@ If you use this in your work, please cite [*The Natural Language Decathlon: Mult
 ## Contact
 
 Contact: [bmccann@salesforce.com](mailto:bmccann@salesforce.com) and [nkeskar@salesforce.com](mailto:nkeskar@salesforce.com)
+
+
+
+## Additional Notes for Running on Windows / Low-end system
+
+Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Windows system with no GPU.  Some of these issues are Windows-specific, some are generic.  Fixes for some issues are present in my fork https://github.com/diarmidmackenzie/decaNLP/, but not (at this time) in the upstream code https://github.com/salesforce/decaNLP
+
+1. The ```-v `pwd`:decaNLP``` part of the docker commands doesn't work in Windows Powershell.  Instead, use ```-v $(pwd):decaNLP```
+
+   - In fact, this alternate syntax probably ought to work in Linux just as well, so I applied the change throughout this file, above - see https://stackoverflow.com/questions/434038/whats-the-cmd-powershell-equivalent-of-back-tick-on-bash#:~:text=So%2C%20PowerShell%20uses%20the%20(now%20unused)%20backtick%20for%20escaping.&text=In%20CMD.,to%20achieve%20what%20you%20want.
+
+2. Since I don't have wget on Windows, the easiest way for me was to run the wget command inside the Docker container.  To do this I had to update a couple of things...
+
+```
+  apt-get-update
+  apt install wget
+
+```
+   And then the wget command can be used as listed.
+
+```
+  wget https://s3.amazonaws.com/research.metamind.io/decaNLP/pretrained/mqan_decanlp_better_sampling_cove_cpu.tgz
+```
+
+3. I had some problems downloading content for the translation task, iwslt.en.de.  I've not looked into this yet, I've just avoided this task so far.
+
+4. With 12GB RAM, 9.5GB of which was available for my Docker container, I was not able to load the full 785,016 tokens from training.  I hit memory errors when loading up the GloVe vectors.
+
+   To solve this, I added a couple of parameters to allow evaluation to only load a subset of the vectors.  This uses the the max_vectors capability that is in torchtext 0.3.  The code in decaNLP/text/torchtext looks like version 0.2.  So I copied the relevant code across from 0.3: https://github.com/pytorch/text/blob/master/torchtext/vocab.py and made them accessible as new arguments for predict.py:
+
+   ```
+     --max_ngram_vectors MAX_NGRAM_VECTORS
+                           Maximum number of Char N-Gram vectors (can help reduce
+                           memory usage)
+     --max_glove_vectors MAX_GLOVE_VECTORS
+                           Maximum number of Glove vectors (can help reduce
+                           memory usage)
+   ```
+
+   Commit is here: https://github.com/diarmidmackenzie/decaNLP/commit/3ac3c6dfcf646a7e69bd9151c4102109ab030329
+
+   On my system, I got decent results with `--max_glove_vectors 100000` and in the end was able to use the full set of Char N-gram vectors.
+
+   Consequence of using a restricted vocabulary is slightly reduced accuracy, but since the words are in frequency order, the loss is pretty minor.
+
+   Maybe I could have solved this other ways: e.g. allocating extra virtual RAM for my docker containers, or running natively in Windows and using additional virtual RAM there.  Or maybe it would be possible to rework the code so it doesn't require such a spike in RAM.  I didn't end up trying any of those approaches, since reducing the vocab worked OK for me...
+
+   Interestingly, I only hit these problems with predict.py.  No such problems were hit with training using train.py - although I didn't yet try training across all 10 tasks...
+
+5. I couldn't get the` --resume` option to work.  I hit an error as described here: https://github.com/salesforce/decaNLP/issues/51.
+
+   Based on info here, I don't believe it is possible to workaround this using `strict=False` (and trying that has hit an error).
+
+   One problem I hit and resolved was an error because I was not using a GPU, whereas the training data came from a GPU.  I have a plausible fix for that here: https://github.com/diarmidmackenzie/decaNLP/commit/faa694df901b55c0ceac086b27dcc08306cf9994, but not possible to test due to the data mismatch.
+
+   I don't understand how serious a problem it is for restarting training to not have access to the optimizer's state dictionary.  My understanding is that it's sub-optimal, but non-fatal, but I'd like to understand the specific consequences better.
+
+   I'd also like to better understand the mismatch, but haven't got to the bottom of that yet.
+
+6. Final issue I hit is that predict.py in the original code can't cope with new datasets, because it depends on the dataset name existing in args.task_to_metric.  I have made a fix here, so that this works as described in the readme.
+https://github.com/diarmidmackenzie/decaNLP/commit/22386d6ce35ab74a9d67ed0af1466c4999bd7f6b
+
+   Without this change, you need to explicitly add my_custom_dataset to the args.task_to_metric dictionary in predict.py
+
+
+
+
