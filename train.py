@@ -51,7 +51,7 @@ def log(rank='main'):
 
 def prepare_data(args, field, logger):
 
-    if field is None: 
+    if field is None:
         logger.info(f'Constructing field')
         FIELD = torchtext.data.ReversibleField(batch_first=True, init_token='<init>', eos_token='<eos>', lower=args.lower, include_lengths=True)
     else:
@@ -80,7 +80,7 @@ def prepare_data(args, field, logger):
         logger.info(f'{task} has {len(split)} validation examples')
         val_sets.append(split)
         if args.vocab_tasks is not None and task in args.vocab_tasks:
-            vocab_sets.extend(split) 
+            vocab_sets.extend(split)
 
     if args.load is None:
         logger.info(f'Getting pretrained word vectors')
@@ -92,7 +92,7 @@ def prepare_data(args, field, logger):
         FIELD.build_vocab(*vocab_sets, max_size=args.max_effective_vocab, vectors=vectors)
 
     FIELD.decoder_itos = FIELD.vocab.itos[:args.max_generative_vocab]
-    FIELD.decoder_stoi = {word: idx for idx, word in enumerate(FIELD.decoder_itos)} 
+    FIELD.decoder_stoi = {word: idx for idx, word in enumerate(FIELD.decoder_itos)}
     FIELD.decoder_to_vocab = {idx: FIELD.vocab.stoi[word] for idx, word in enumerate(FIELD.decoder_itos)}
     FIELD.vocab_to_decoder = {idx: FIELD.decoder_stoi[word] for idx, word in enumerate(FIELD.vocab.itos) if word in FIELD.decoder_stoi}
 
@@ -101,7 +101,7 @@ def prepare_data(args, field, logger):
     print(FIELD.vocab.itos[:500])
 
     logger.info('Preprocessing training data')
-    preprocess_examples(args, args.train_tasks, train_sets, FIELD, logger, train=True) 
+    preprocess_examples(args, args.train_tasks, train_sets, FIELD, logger, train=True)
     logger.info('Preprocessing validation data')
     preprocess_examples(args, args.val_tasks, val_sets, FIELD, logger, train=args.val_filter)
 
@@ -113,9 +113,9 @@ def to_iter(args, world_size, val_batch_size, data, device, train=True, token_te
     shuffle = None if not token_testing else False
     reverse = args.reverse
     Iterator = torchtext.data.BucketIterator if train else torchtext.data.Iterator
-    it = Iterator(data, batch_size=val_batch_size, 
-       device=device, batch_size_fn=batch_fn if train else None, 
-       distributed=world_size>1, train=train, repeat=train, sort=sort, 
+    it = Iterator(data, batch_size=val_batch_size,
+       device=device, batch_size_fn=batch_fn if train else None,
+       distributed=world_size>1, train=train, repeat=train, sort=sort,
        shuffle=shuffle, reverse=args.reverse)
     return it
 
@@ -141,11 +141,11 @@ def step(model, batch, opt, iteration, field, task, lr=None, grad_clip=None, wri
     return loss.item(), {}
 
 
-def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_size=1, 
+def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_size=1,
     log_every=10, val_every=100, save_every=1000, rounds=False, val_iters=[], writer=None, start_iteration=1, rnd=1):
     """main training function"""
 
-    logger = log(rank) 
+    logger = log(rank)
     local_loss, num_examples, len_contexts, len_answers, iteration = 0, 0, 0, 0, start_iteration
 
     train_iter_deep = deepcopy(train_iterations)
@@ -156,7 +156,7 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
 
         # For some number of rounds, we 'jump start' some subset of the tasks
         # by training them and not others
-        # once the specified number of rounds is completed, 
+        # once the specified number of rounds is completed,
         # switch to normal round robin training
         if rnd<args.jump_start:
             train_iterations = [0]*len(train_iterations)
@@ -174,10 +174,10 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
                 if not args.resume or iteration > start_iteration:
                     task_progress = f'{task_iteration}/{task_iterations}:' if task_iterations is not None else ''
                     round_progress = f'round_{rnd}:' if rounds else ''
-    
+
                     # validate
-                    if (val_every is not None and 
-                        ((iteration % args.val_every == 0 % args.val_every) or 
+                    if (val_every is not None and
+                        ((iteration % args.val_every == 0 % args.val_every) or
                             (args.load and iteration == start_iteration + 1))):
                         train_task_val_metric = None
                         for val_task_idx, (val_task, val_iter) in enumerate(val_iters):
@@ -187,12 +187,12 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
                                 writer.add_scalars(f'loss/val', {val_task: val_loss.item()}, iteration)
                             else:
                                 log_entry = f'{args.timestamp}:{elapsed_time(logger)}:iteration_{iteration}:{round_progress}train_{task}:{task_progress}val_{val_task}:'
-                               
+
                             metric_entry = ''
                             for metric_key, metric_value in metric_dict.items():
                                 metric_entry += f'{metric_key}_{metric_value:.2f}:'
                             metric_entry = metric_entry[:-1]
-                           
+
                             # val log
                             logger.info(log_entry + metric_entry)
                             if writer is not None:
@@ -206,19 +206,19 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
                     # saving
                     if save_every is not None and (iteration % args.save_every == 0 % args.save_every):
                         if world_size > 1:
-                            torch.distributed.barrier() 
+                            torch.distributed.barrier()
                         if rank is not None and rank == 0:
                             torch.save({'model_state_dict': {k: v.cpu() for k, v in model.state_dict().items()}, 'field': field}, os.path.join(args.log_dir, f'iteration_{iteration}.pth'))
                         if world_size > 1:
-                            torch.distributed.barrier() 
+                            torch.distributed.barrier()
                         torch.save(opt.state_dict(), os.path.join(args.log_dir, f'iteration_{iteration}_rank_{rank}_optim.pth'))
                         if world_size > 1:
-                            torch.distributed.barrier() 
+                            torch.distributed.barrier()
 
                     # lr update
-                    lr = opt.param_groups[0]['lr'] 
+                    lr = opt.param_groups[0]['lr']
                     if args.warmup > 0 and args.transformer_lr:
-                        lr = get_learning_rate(iteration, args) 
+                        lr = get_learning_rate(iteration, args)
 
                     # param update
                     loss, train_metric_dict = step(model, batch, opt, iteration, field, task, lr=lr, grad_clip=args.grad_clip, writer=writer, it=train_iter)
@@ -246,11 +246,11 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
                         for metric_key, metric_value in local_train_metric_dict.items():
                             metric_entry += f'{metric_key}_{metric_value:.2f}:'
                         metric_entry = f'{metric_entry[:-1]}'
-                        logger.info(f'{args.timestamp}:{elapsed_time(logger)}:iteration_{iteration}:{round_progress}train_{task}:{task_progress}{avg_batch_size}loss_{local_loss:.4f}{metric_entry}') 
-                        num_examples = 0 
-                        len_contexts = 0 
-                        len_answers = 0  
-    
+                        logger.info(f'{args.timestamp}:{elapsed_time(logger)}:iteration_{iteration}:{round_progress}train_{task}:{task_progress}{avg_batch_size}loss_{local_loss:.4f}{metric_entry}')
+                        num_examples = 0
+                        len_contexts = 0
+                        len_answers = 0
+
                         if writer is not None:
                             writer.add_scalars(f'loss/train', {f'{task}': local_loss}, iteration)
                             for metric_key, metric_value in local_train_metric_dict.items():
@@ -264,7 +264,7 @@ def train(args, model, opt, train_iters, train_iterations, field, rank=0, world_
                         local_loss = 0
                         local_train_metric_dict = {}
                         num_examples = 0
-                    
+
                 # book keeping
                 task_iteration += 1
                 iteration += 1
@@ -285,7 +285,7 @@ def run(args, run_args, rank=0, world_size=1):
     logger.start = time.time()
 
     logger.info(f'Preparing iterators')
-    train_iters = [(name, to_iter(args, world_size, tok, x, device, token_testing=args.token_testing)) 
+    train_iters = [(name, to_iter(args, world_size, tok, x, device, token_testing=args.token_testing))
                       for name, x, tok in zip(args.train_tasks, train_sets, args.train_batch_tokens)]
     val_iters = [(name, to_iter(args, world_size, tok, x, device, train=False, token_testing=args.token_testing, sort=False if 'sql' in name else None))
                     for name, x, tok in zip(args.val_tasks, val_sets, args.val_batch_size)]
@@ -297,7 +297,7 @@ def run(args, run_args, rank=0, world_size=1):
         writer = None
 
     model = init_model(args, field, logger, world_size, device)
-    opt = init_opt(args, model) 
+    opt = init_opt(args, model)
     start_iteration = 1
 
     if save_dict is not None:
@@ -306,26 +306,29 @@ def run(args, run_args, rank=0, world_size=1):
         model.load_state_dict(save_dict['model_state_dict'])
         if args.resume:
             logger.info(f'Resuming Training from {os.path.splitext(args.load)[0]}_rank_{rank}_optim.pth')
-            opt.load_state_dict(torch.load(os.path.join(args.save, f'{os.path.splitext(args.load)[0]}_rank_{rank}_optim.pth')))
+            if (world_size == -1):
+                opt.load_state_dict(torch.load(os.path.join(args.save, f'{os.path.splitext(args.load)[0]}_rank_{rank}_optim.pth'), map_location = 'cpu'))
+            else:
+                opt.load_state_dict(torch.load(os.path.join(args.save, f'{os.path.splitext(args.load)[0]}_rank_{rank}_optim.pth')))
             start_iteration = int(os.path.splitext(os.path.basename(args.load))[0].split('_')[1])
 
     logger.info(f'Begin Training')
-    train(args, model, opt, train_iters, args.train_iterations, field, val_iters=val_iters, 
-        rank=rank, world_size=world_size, 
+    train(args, model, opt, train_iters, args.train_iterations, field, val_iters=val_iters,
+        rank=rank, world_size=world_size,
         log_every=args.log_every, val_every=args.val_every, rounds=len(train_iters)>1,
         writer=writer if rank==0 else None, save_every=args.save_every, start_iteration=start_iteration)
 
 
 def init_model(args, field, logger, world_size, device):
     logger.info(f'Initializing {args.model}')
-    Model = getattr(models, args.model) 
+    Model = getattr(models, args.model)
     model = Model(field, args)
-    params = get_trainable_params(model) 
+    params = get_trainable_params(model)
     num_param = count_params(params)
     logger.info(f'{args.model} has {num_param:,} trainable parameters')
 
     model.to(device)
-    if world_size > 1: 
+    if world_size > 1:
         logger.info(f'Wrapping model for distributed')
         model = DistributedDataParallel(model)
 
@@ -341,7 +344,7 @@ def init_opt(args, model):
         else:
             opt = torch.optim.Adam(model.params, betas=(args.beta0, 0.999))
     else:
-        opt = torch.optim.SGD(model.params, lr=args.sgd_lr) 
+        opt = torch.optim.SGD(model.params, lr=args.sgd_lr)
     return opt
 
 
@@ -372,4 +375,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
