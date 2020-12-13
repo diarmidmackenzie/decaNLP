@@ -200,11 +200,11 @@ Contact: [bmccann@salesforce.com](mailto:bmccann@salesforce.com) and [nkeskar@sa
 
 ## Additional Notes for Running on Windows / Low-end system
 
-Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Windows system with no GPU.  Some of these issues are Windows-specific, some are generic.  Fixes for some issues are present in my fork https://github.com/diarmidmackenzie/decaNLP/, but not (at this time) in the upstream code https://github.com/salesforce/decaNLP
+Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Windows system with no GPU.  Some of these issues are Windows-specific, some are generic.  Fixes for some issues are present in [my fork]( https://github.com/diarmidmackenzie/decaNLP/), but not (at this time) in the upstream code https://github.com/salesforce/decaNLP
 
 1. The ```-v `pwd`:decaNLP``` part of the docker commands doesn't work in Windows Powershell.  Instead, use ```-v $(pwd):decaNLP```
 
-   - In fact, this alternate syntax probably ought to work in Linux just as well, so I applied the change throughout this file, above - see https://stackoverflow.com/questions/434038/whats-the-cmd-powershell-equivalent-of-back-tick-on-bash#:~:text=So%2C%20PowerShell%20uses%20the%20(now%20unused)%20backtick%20for%20escaping.&text=In%20CMD.,to%20achieve%20what%20you%20want.
+   - In fact, this alternate syntax probably ought to work in Linux just as well, so I applied the change throughout this file, above - see [here](https://stackoverflow.com/questions/434038/whats-the-cmd-powershell-equivalent-of-back-tick-on-bash#:~:text=So%2C%20PowerShell%20uses%20the%20(now%20unused)%20backtick%20for%20escaping.&text=In%20CMD.,to%20achieve%20what%20you%20want.).
 
 2. Since I don't have wget on Windows, the easiest way for me was to run the wget command inside the Docker container.  To do this I had to update a couple of things...
 
@@ -223,7 +223,7 @@ Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Wi
 
 4. With 12GB RAM, 9.5GB of which was available for my Docker container, I was not able to load the full 785,016 tokens from training.  I hit memory errors when loading up the GloVe vectors.
 
-   To solve this, I added a couple of parameters to allow evaluation to only load a subset of the vectors.  This uses the the max_vectors capability that is in torchtext 0.3.  The code in decaNLP/text/torchtext looks like version 0.2.  So I copied the relevant code across from 0.3: https://github.com/pytorch/text/blob/master/torchtext/vocab.py and made them accessible as new arguments for predict.py:
+   To solve this, I added a couple of parameters to allow evaluation to only load a subset of the vectors.  This uses the the max_vectors capability that is in torchtext 0.3.  The code in decaNLP/text/torchtext looks like version 0.2.  So I copied the [relevant code](https://github.com/pytorch/text/blob/master/torchtext/vocab.py) across from 0.3 and made them accessible as new arguments for predict.py:
 
    ```
      --max_ngram_vectors MAX_NGRAM_VECTORS
@@ -234,7 +234,7 @@ Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Wi
                            memory usage)
    ```
 
-   Commit is here: https://github.com/diarmidmackenzie/decaNLP/commit/3ac3c6dfcf646a7e69bd9151c4102109ab030329
+   Commit is [here](https://github.com/diarmidmackenzie/decaNLP/commit/3ac3c6dfcf646a7e69bd9151c4102109ab030329).
 
    On my system, I got decent results with `--max_glove_vectors 100000` and in the end was able to use the full set of Char N-gram vectors.
 
@@ -244,20 +244,17 @@ Notes added by Diarmid Mackenzie, based on my experience running decaNLP on a Wi
 
    Interestingly, I only hit these problems with predict.py.  No such problems were hit with training using train.py - although I didn't yet try training across all 10 tasks...
 
-5. I couldn't get the` --resume` option to work.  I hit an error as described here: https://github.com/salesforce/decaNLP/issues/51.
+5. I couldn't get the` --resume` option to work.  I hit an error as described [here](https://github.com/salesforce/decaNLP/issues/51).
 
-   Based on info here, I don't believe it is possible to workaround this using `strict=False` (and trying that has hit an error).
+   Based on info [here](https://github.com/pytorch/pytorch/issues/3852), I don't believe it is possible to workaround this using `strict=False` (and trying that has hit an error).
 
-   One problem I hit and resolved was an error because I was not using a GPU, whereas the training data came from a GPU.  I have a plausible fix for that here: https://github.com/diarmidmackenzie/decaNLP/commit/faa694df901b55c0ceac086b27dcc08306cf9994, but not possible to test due to the data mismatch.
+   One problem I hit and resolved was an error because I was not using a GPU, whereas the training data came from a GPU.  I have a plausible fix for that [here](https://github.com/diarmidmackenzie/decaNLP/commit/faa694df901b55c0ceac086b27dcc08306cf9994), but not possible to test due to the data mismatch.
 
    I don't understand how serious a problem it is for restarting training to not have access to the optimizer's state dictionary.  My understanding is that it's sub-optimal, but non-fatal, but I'd like to understand the specific consequences better.
 
    I'd also like to better understand the mismatch, but haven't got to the bottom of that yet.
 
-6. Final issue I hit is that predict.py in the original code can't cope with new datasets, because it depends on the dataset name existing in args.task_to_metric.  I have made a fix here, so that this works as described in the readme.
-https://github.com/diarmidmackenzie/decaNLP/commit/22386d6ce35ab74a9d67ed0af1466c4999bd7f6b
-
-   Without this change, you need to explicitly add my_custom_dataset to the args.task_to_metric dictionary in predict.py
+6. Final issue I hit is that predict.py in the original code can't cope with new datasets, because it depends on the dataset name existing in args.task_to_metric.  I have made a fix [here](https://github.com/diarmidmackenzie/decaNLP/commit/22386d6ce35ab74a9d67ed0af1466c4999bd7f6b), so that this works as described in the readme.  Without this change, you need to explicitly add my_custom_dataset to the args.task_to_metric dictionary in predict.py
 
 
 
