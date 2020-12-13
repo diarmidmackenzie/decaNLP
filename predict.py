@@ -122,7 +122,7 @@ def run(args, field, val_sets, model):
                             for l in results_file:
                                 print(l)
                         metrics = json.loads(results_file.readlines()[0])
-                        decaScore.append(metrics[args.task_to_metric[task]])
+                        decaScore.append(metrics[args_task_to_metric(task)])
                     continue
 
             for x in [prediction_file_name, answer_file_name, results_file_name]:
@@ -193,7 +193,7 @@ def run(args, field, val_sets, model):
                     for i, (p, a) in enumerate(zip(predictions, answers)):
                         print(f'Prediction {i+1}: {p}\nAnswer {i+1}: {a}\n')
                     print(metrics)
-                decaScore.append(metrics[args.task_to_metric[task]])
+                decaScore.append(metrics[args_task_to_metric(task)])
 
     print(f'Evaluated Tasks:\n')
     for i, (task, _) in enumerate(iters):
@@ -251,8 +251,7 @@ def get_args():
         'wikisql': 'lfem',
         'woz.en': 'joint_goal_em',
         'zre': 'corpus_f1',
-        'schema': 'em',
-        'my_custom_dataset': 'nf1'}
+        'schema': 'em'}
 
     if not args.checkpoint_name is None:
         args.best_checkpoint = os.path.join(args.path, args.checkpoint_name)
@@ -262,6 +261,14 @@ def get_args():
 
     return args
 
+def args_task_to_metric(task):
+    if task in args.task_to_metric.keys():
+        metric = args.task_to_metric[task]
+    else:
+        # Use nf1 as the default metric if task metrics have not been specified
+        metric = 'nf1'
+
+    return metric
 
 def get_best(args):
     with open(os.path.join(args.path, 'config.json')) as f:
@@ -281,7 +288,7 @@ def get_best(args):
                 print(e)
                 continue
             it = int(l.split('iteration_')[1].split(':')[0])
-            metric = args.task_to_metric[task]
+            metric = args_task_to_metric(task)
             score = float(l.split(metric+'_')[1].split(':')[0])
             if it in deca_scores:
                 deca_scores[it]['deca'] += score
