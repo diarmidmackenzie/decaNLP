@@ -217,7 +217,7 @@ class SubwordVocab(Vocab):
 class Vectors(object):
 
     def __init__(self, name, cache='.vector_cache',
-                 url=None, unk_init=torch.Tensor.zero_):
+                 url=None, unk_init=torch.Tensor.zero_, max_vectors=None):
         """Arguments:
                name: name of the file that contains the vectors
                cache: directory for cached vectors
@@ -225,9 +225,16 @@ class Vectors(object):
                unk_init (callback): by default, initalize out-of-vocabulary word vectors
                    to zero vectors; can be any function that takes in a Tensor and
                    returns a Tensor of the same size
+               max_vectors (int): this can be used to limit the number of
+                   pre-trained vectors loaded.
+                   Most pre-trained vector sets are sorted
+                   in the descending order of word frequency.
+                   Thus, in situations where the entire set doesn't fit in memory,
+                   or is not needed for another reason, passing `max_vectors`
+                   can limit the size of the loaded set.
          """
         self.unk_init = unk_init
-        self.cache(name, cache, url=url)
+        self.cache(name, cache, url=url, max_vectors=max_vectors)
 
     def __getitem__(self, token):
         if token in self.stoi:
@@ -235,13 +242,21 @@ class Vectors(object):
         else:
             return self.unk_init(torch.Tensor(1, self.dim))
 
-    def cache(self, name, cache, url=None):
+    def cache(self, name, cache, url=None, max_vectors=None):
         if os.path.isfile(name):
             path = name
-            path_pt = os.path.join(cache, os.path.basename(name)) + '.pt'
+            if max_vectors:
+                file_suffix = '_{}.pt'.format(max_vectors)
+            else:
+                file_suffix = '.pt'
+            path_pt = os.path.join(cache, os.path.basename(name)) + file_suffix
         else:
             path = os.path.join(cache, name)
-            path_pt = path + '.pt'
+            if max_vectors:
+                file_suffix = '_{}.pt'.format(max_vectors)
+            else:
+                file_suffix = '.pt'
+            path_pt = path + file_suffix
 
         if not os.path.isfile(path_pt):
             if not os.path.isfile(path) and url:
@@ -267,6 +282,7 @@ class Vectors(object):
             # argument must be Python 2 str (Python 3 bytes) or
             # Python 3 str (Python 2 unicode)
             itos, vectors, dim = [], array.array(str('d')), None
+            vectors_loaded = 0
 
             # Try to read the whole file with utf-8 encoding.
             binary_lines = False
@@ -283,8 +299,12 @@ class Vectors(object):
                     lines = [line for line in f]
                 binary_lines = True
 
+                num_lines = len(lines)
+                if not max_vectors or max_vectors > num_lines:
+                    max_vectors = num_lines
+
             logger.info("Loading vectors from {}".format(path))
-            for line in tqdm(lines, total=len(lines)):
+            for line in tqdm(lines, total=max_vectors):
                 # Explicitly splitting on " " is important, so we don't
                 # get rid of Unicode non-breaking spaces in the vectors.
                 entries = line.rstrip().split(b" " if binary_lines else " ")
@@ -310,7 +330,11 @@ class Vectors(object):
                         logger.info("Skipping non-UTF8 token {}".format(repr(word)))
                         continue
                 vectors.extend(float(x) for x in entries)
+                vectors_loaded += 1
                 itos.append(word)
+
+                if vectors_loaded == max_vectors:
+                    break
 
             self.itos = itos
             self.stoi = {word: i for i, word in enumerate(itos)}

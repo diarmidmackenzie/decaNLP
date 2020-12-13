@@ -40,9 +40,22 @@ def prepare_data(args, FIELD):
     FIELD.append_vocab(new_vocab)
     print(f'Vocabulary has expanded to {len(FIELD.vocab)} tokens')
 
-    char_vectors = torchtext.vocab.CharNGram(cache=args.embeddings)
-    glove_vectors = torchtext.vocab.GloVe(cache=args.embeddings)
+    if args.max_ngram_vectors == 0:
+        print(f'Getting CharNGrams')
+        char_vectors = torchtext.vocab.CharNGram(cache=args.embeddings)
+    else:
+        print(f'Getting at most {args.max_ngram_vectors} CharNGrams')
+        char_vectors = torchtext.vocab.CharNGram(cache=args.embeddings, max_vectors=args.max_ngram_vectors)
+
+    if args.max_glove_vectors == 0:
+        print(f'Getting GloVe Vectors')
+        char_vectors = torchtext.vocab.GloVe(cache=args.embeddings)
+    else:
+        print(f'Getting at most {args.max_glove_vectors} GloVe Vectors')
+        glove_vectors = torchtext.vocab.GloVe(cache=args.embeddings, max_vectors=args.max_glove_vectors)
+
     vectors = [char_vectors, glove_vectors]
+    print(f'Loading Vectors')
     FIELD.vocab.load_vectors(vectors, True)
     FIELD.decoder_to_vocab = {idx: FIELD.vocab.stoi[word] for idx, word in enumerate(FIELD.decoder_itos)}
     FIELD.vocab_to_decoder = {idx: FIELD.decoder_stoi[word] for idx, word in enumerate(FIELD.vocab.itos) if word in FIELD.decoder_stoi}
@@ -53,9 +66,9 @@ def prepare_data(args, FIELD):
 
 def to_iter(data, bs, device):
     Iterator = torchtext.data.Iterator
-    it = Iterator(data, batch_size=bs, 
-       device=device, batch_size_fn=None, 
-       train=False, repeat=False, sort=None, 
+    it = Iterator(data, batch_size=bs,
+       device=device, batch_size_fn=None,
+       train=False, repeat=False, sort=None,
        shuffle=None, reverse=False)
 
     return it
@@ -67,7 +80,7 @@ def run(args, field, val_sets, model):
     if len(args.val_batch_size) == 1 and len(val_sets) > 1:
         args.val_batch_size *= len(val_sets)
     iters = [(name, to_iter(x, bs, device)) for name, x, bs in zip(args.tasks, val_sets, args.val_batch_size)]
- 
+
     def mult(ps):
         r = 0
         for p in ps:
@@ -114,7 +127,7 @@ def run(args, field, val_sets, model):
 
             for x in [prediction_file_name, answer_file_name, results_file_name]:
                 os.makedirs(os.path.dirname(x), exist_ok=True)
-    
+
             if not os.path.exists(prediction_file_name) or args.overwrite:
                 with open(prediction_file_name, 'w') as prediction_file:
                     predictions = []
@@ -128,7 +141,7 @@ def run(args, field, val_sets, model):
                             if 'squad' in task:
                                 ids.append(it.dataset.q_ids[int(batch.squad_id[i])])
                             prediction_file.write(pp + '\n')
-                            predictions.append(pp) 
+                            predictions.append(pp)
                 if 'sql' in task:
                     with open(ids_file_name, 'w') as id_file:
                         for i in ids:
@@ -139,14 +152,14 @@ def run(args, field, val_sets, model):
                             id_file.write(i + '\n')
             else:
                 with open(prediction_file_name) as prediction_file:
-                    predictions = [x.strip() for x in prediction_file.readlines()] 
+                    predictions = [x.strip() for x in prediction_file.readlines()]
                 if 'sql' in task or 'squad' in task:
                     with open(ids_file_name) as id_file:
                         ids = [int(x.strip()) for x in id_file.readlines()]
-   
+
             def from_all_answers(an):
-                return [it.dataset.all_answers[sid] for sid in an.tolist()] 
-    
+                return [it.dataset.all_answers[sid] for sid in an.tolist()]
+
             if not os.path.exists(answer_file_name) or args.overwrite:
                 with open(answer_file_name, 'w') as answer_file:
                     answers = []
@@ -160,12 +173,12 @@ def run(args, field, val_sets, model):
                         else:
                             a = field.reverse(batch.answer.data)
                         for aa in a:
-                            answers.append(aa) 
+                            answers.append(aa)
                             answer_file.write(json.dumps(aa) + '\n')
             else:
                 with open(answer_file_name) as answer_file:
-                    answers = [json.loads(x.strip()) for x in answer_file.readlines()] 
-    
+                    answers = [json.loads(x.strip()) for x in answer_file.readlines()]
+
             if len(answers) > 0:
                 if not os.path.exists(results_file_name) or args.overwrite:
                     metrics, answers = compute_metrics(predictions, answers, bleu='iwslt' in task or 'multi30k' in task or args.bleu, dialogue='woz' in task,
@@ -175,7 +188,7 @@ def run(args, field, val_sets, model):
                 else:
                     with open(results_file_name) as results_file:
                         metrics = json.loads(results_file.readlines()[0])
-    
+
                 if not args.silent:
                     for i, (p, a) in enumerate(zip(predictions, answers)):
                         print(f'Prediction {i+1}: {p}\nAnswer {i+1}: {a}\n')
@@ -204,15 +217,17 @@ def get_args():
     parser.add_argument('--rouge', action='store_true', help='whether to use the bleu metric (always on for cnn, dailymail, and cnn_dailymail)')
     parser.add_argument('--overwrite', action='store_true', help='whether to overwrite previously written predictions')
     parser.add_argument('--silent', action='store_true', help='whether to print predictions to stdout')
+    parser.add_argument('--max_ngram_vectors', default=0, type=int, help='Maximum number of Char N-Gram vectors (can help reduce memory usage)')
+    parser.add_argument('--max_glove_vectors', default=0, type=int, help='Maximum number of Glove vectors (can help reduce memory usage)')
 
     args = parser.parse_args()
 
     with open(os.path.join(args.path, 'config.json')) as config_file:
         config = json.load(config_file)
-        retrieve = ['model', 
-                    'transformer_layers', 'rnn_layers', 'transformer_hidden', 
-                    'dimension', 'load', 'max_val_context_length', 'val_batch_size', 
-                    'transformer_heads', 'max_output_length', 'max_generative_vocab', 
+        retrieve = ['model',
+                    'transformer_layers', 'rnn_layers', 'transformer_hidden',
+                    'dimension', 'load', 'max_val_context_length', 'val_batch_size',
+                    'transformer_heads', 'max_output_length', 'max_generative_vocab',
                     'lower', 'cove', 'intermediate_cove', 'elmo', 'glove_and_char']
         for r in retrieve:
             if r in config:
@@ -236,21 +251,22 @@ def get_args():
         'wikisql': 'lfem',
         'woz.en': 'joint_goal_em',
         'zre': 'corpus_f1',
-        'schema': 'em'}
+        'schema': 'em',
+        'my_custom_dataset': 'nf1'}
 
     if not args.checkpoint_name is None:
         args.best_checkpoint = os.path.join(args.path, args.checkpoint_name)
     else:
         assert os.path.exists(os.path.join(args.path, 'process_0.log'))
         args.best_checkpoint = get_best(args)
-           
+
     return args
 
 
 def get_best(args):
     with open(os.path.join(args.path, 'config.json')) as f:
         save_every = json.load(f)['save_every']
-    
+
     with open(os.path.join(args.path, 'process_0.log')) as f:
         lines = f.readlines()
 
@@ -293,7 +309,7 @@ if __name__ == '__main__':
     save_dict = torch.load(args.best_checkpoint)
     field = save_dict['field']
     print(f'Initializing Model')
-    Model = getattr(models, args.model) 
+    Model = getattr(models, args.model)
     model = Model(field, args)
     model_dict = save_dict['model_state_dict']
     backwards_compatible_cove_dict = {}
